@@ -1,0 +1,68 @@
+#!/bin/bash
+#Author: Keelan Murphy
+#Description: Adds a customer to the CustomerDetails file
+
+#Function to retrieve a non-empty input from the user
+retrieveInput() {
+  #Do an initial read of input - Note input not declared as local
+  read input
+
+  #Loop until variable input contains something, if it doesn't already
+  until [[ $input != "" ]] ; do
+    #Alert the user no information was entered
+    echo "Nothing entered, please try again:"
+    #Read the users latest input
+    read input
+  done
+}
+
+
+#Clear the initial menu from the screen for the sake of readability
+clear
+
+#Prompt the user to enter an email address and call the retrieve input function
+echo "Enter an e-mail address:"
+retrieveInput
+
+#Set the entered email to the input variable retrieved from the above function
+email=$input
+
+#Loop until the email address matches the _@_._ format
+until [[ $email == ?*"@"?*"."?* ]] ; do
+  #Alert the user they have entered an invalid email address format and retrieve a new attempt
+  echo "Invalid email address entered plase try again:"
+  retrieveInput
+  email=$input
+done
+
+#Ask the user for a name, perform no validation on the input
+echo "Enter a name:"
+retrieveInput
+name=$input
+
+#Ask for an alias, perform no validation on the input
+echo "Enter an alias:"
+retrieveInput
+alias=$input
+
+#Ask for an address, perform no validation on the input
+echo "Enter an address:"
+retrieveInput
+address=$input
+
+#Ask for a phone number, no validation as a number may be entered in format +353-81-234-5678
+echo "Enter a phone number:"
+retrieveInput
+number=$input
+
+#Write the retrieved variables
+printf "$email	$name	$alias	$address	$number\n" >> CustomerDetails
+
+#Clear the screen
+clear
+
+#Let the user know the customer was added
+echo "$name was added"
+
+#Allow the text to remain on screen for 3 seconds before returning to Menu
+sleep 3

@@ -1,0 +1,115 @@
+#!/bin/bash
+#Author: Keelan Murphy
+#Description: Removes a user from the CustomerDetails file based on name or alias
+
+#Function to retrieve a non-empty input from the user
+retrieveInput() {
+  #Do an initial read of input - Note input not declared as local, allows access from throughout script
+  read input
+
+  #Loop until variable input contains something, if it doesn't already
+  until [[ $input != "" ]] ; do
+    #Alert the user no information was entered
+    echo "Nothing entered, please try again:"
+    #Read the users latest input
+    read input
+  done
+}
+
+#Function to check if an array contains a variable
+arrayContains () { 
+  #Retrieves's the argument received (the array) and sets as a local variable
+  local localArray="$1[@]"
+
+  #Set the inArray to 0 representing false - Note inArray not declared as local
+  inArray=0 #0 represents false
+  
+  #Loop through the array as lineNum
+  for lineNum in "${!localArray}"; do
+
+    #Check if the lineNum is equal to the input variable
+    if [[ $lineNum == $input ]]; then	
+      #If true set inArray to 1 representing true 
+      inArray=1 #1 represents true
+      break
+    fi
+  done
+}
+
+#Function to remove an inputted line
+removeLine () {
+  #Set the local line variable to the inputted param
+  local line="$1"
+
+  #Retrieve the name field belonging to the line - As this is the first of similar awk commands it will be explained
+  #-v line="$line" is to set the shell variable as an awk variable
+  #BEGIN {FS="\t"} sets the  awk delimiter as a tab space
+  local name=$(awk -v line="$line" 'BEGIN {FS="\t"} NR==line {print $2}' CustomerDetails)
+
+  #Confirm the user wishes to remove the customer
+  echo "Are you sure you want to remove $name? (y/n)"
+  retrieveInput
+
+  #Enter until loop until input matches case insensitive y or n, if it doesn't already
+  until [[ $input == Y || $input == y || $input == N || $input == n ]] ; do
+    echo "Please answer y or n"
+    retrieveInput	
+  done
+
+  #If input is Y (case-insensitive) remove customer
+  if [[ $input == Y || $input == y ]]
+  then
+    #Move all lines that don't match line number to temp file, then rename temp to CustomerDetails
+    awk -v line="$line" 'NR!=line' CustomerDetails > temp && mv temp CustomerDetails
+    #Notify user that customer was removed
+    echo "$name removed"
+  #If input is N notify user that customer was not removed
+  elif [[ $input == N || $input == n ]] 
+  then
+    echo "$name was not removed"
+  fi
+}
+
+#Clear the screen to improve readability
+clear
+
+#Prompt user for name/alias
+echo "Enter the name/alias of the customer you wish to remove"
+retrieveInput
+
+#Create an array of row numbers where a case insensitive match is found (Both set to lowercase)
+arr=($(awk -v input="$input" 'BEGIN {FS="\t"} tolower($2) == tolower(input) || tolower($3) == tolower(input) {print NR}' CustomerDetails))
+
+#If array contains multiple row numbers
+if [[ ${#arr[@]} > 1 ]]
+  then
+    #Notify the user that more than one Customer matched the criteria
+    echo "More than one instance found please choose a number to remove"
+    #print out the row numbers that match along with name and address
+    awk -v input="$input" 'BEGIN {FS="\t"} tolower($2) == tolower(input) || tolower($3) == tolower(input) {print NR " - " $2 " - " $4}' CustomerDetails
+      
+    #Retrieve input and check the inputted row is one of the matches in the array of row numbers
+    retrieveInput
+    arrayContains arr
+    #Loop until the inArray variable from the function returns true
+    until [[ $inArray == 1 ]] ; do
+      #Alert the user they have entered an invalid row number and retrieve a correct row number
+      echo "Invalid row number please select from the list above"
+      retrieveInput
+      arrayContains arr
+    done
+    #Call the removeLine function with the validated input as an argument
+    removeLine $input
+
+  #if the array size is equal to one call the removeLine function with the first (and only) instance in the array as an argument
+  elif [[ ${#arr[@]} == 1 ]]
+  then
+    removeLine ${arr[0]}
+  
+  #Notify the user there was no match found if the above conditions are not met
+  else
+  echo "No instance found matching input"
+fi
+
+#Sleep for 3 seconds so the user can see the result
+sleep 3

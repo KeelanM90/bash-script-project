@@ -1,0 +1,47 @@
+#!/bin/bash
+#Author: Keelan Murphy
+#Description: Responsible for the menu the user sees
+
+#Create an infinite loop
+while : ; do
+
+  #Clears the screen after each input
+  clear
+
+  #Print the menu to screen
+  echo "Welcome. Please choose one of the following:"
+  echo "	1. Add a new Customer"
+  echo "	2. Remove an existing Customer"
+  echo "	3. Search for a Customer"
+  echo "	4. E-mail a Customer"
+  echo "	5. Exit"
+  echo "Enter a Number:"
+
+  #Retrieve the input from the user
+  read input
+
+  #Handle the users input, if not recognised tell them to try again
+  case $input in
+    1)
+      ./AddCust
+      ;;
+    2)
+      ./RemCust
+      ;;
+    3)
+      ./FindCust
+      ;;
+    4)
+      ./EmailCust
+      ;;
+    5)
+      exit
+      ;;
+    *)
+      echo "Invalid option entered, please try again"
+      sleep 3
+      ;;
+    esac
+
+#Close the infinite while loop
+done

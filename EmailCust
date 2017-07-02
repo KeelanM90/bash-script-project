@@ -1,0 +1,153 @@
+#!/bin/bash
+#Author: Keelan Murphy
+#Description: Emails a customer from the CustomerDetails file based any information in their row
+
+#Function to retrieve a non-empty input from the user
+retrieveInput() {
+  #Do an initial read of input - Note input not declared as local, allows access from throughout script
+  read input
+
+  #Loop until variable input contains something, if it doesn't already
+  until [[ $input != "" ]] ; do
+    #Alert the user no information was entered
+    echo "Nothing entered, please try again:"
+    #Read the users latest input
+    read input
+  done
+}
+
+#Function to check if an array contains a variable
+arrayContains () { 
+  #Retrieves's the argument received (the array) and sets as a local variable
+  local localArray="$1[@]"
+
+  #Set the inArray to 0 representing false - Note inArray not declared as local
+  inArray=0 #0 represents false
+  
+  #Loop through the array as lineNum
+  for lineNum in "${!localArray}"; do
+
+    #Check if the lineNum is equal to the input variable
+    if [[ $lineNum == $input ]]; then	
+      #If true set inArray to 1 representing true 
+      inArray=1 #1 represents true
+      break
+    fi
+  done
+}
+
+#Function to email a customer
+emailCust () {
+  #Get the user to enter the email subject
+  echo "Please enter the email subject:"
+  retrieveInput
+  #Store the subject in a subject variable
+  local emailSubject=$input
+
+  #Get the user to enter the email message
+  echo "Please enter the email message:"
+  retrieveInput
+  #Store the message in a message variable
+  local emailMessage=$input
+        
+  #Retrieve the emails information
+  local emailAddress="$1"
+
+  echo $emailMessage | mail -s $emailSubject $emailAddress
+
+  #Notify the user of which addresses were emailed
+  echo "The following addresses were emailed:"
+  echo "$emailAddress"
+  sleep 4 
+  exit
+}
+
+#Clear the screen to improve readability
+clear
+#Create an infinite loop
+while : ; do
+
+
+  #Clears the screen after each input
+  clear
+
+  #Print the menu to screen
+  echo "What do you want to do?:"
+  echo "	1. Email all customers"
+  echo "	2. Email all matching customers"
+  echo "	3. E-mail a Customer"
+  echo "	4. Exit"
+  echo "Enter a Number:"
+
+  #Retrieve the input from the user
+  read input
+
+  #Handle the users input, if not recognised tell them to try again
+  case $input in
+    1)
+      emailAddress=$(awk -v input="$input" 'BEGIN{FS="\t"} "@" {print $1}' CustomerDetails)
+      emailCust "$emailAddress" "$subject" "$message"
+      ;;
+    2)
+      #Prompt user for search term
+      echo "Please enter your search term"
+      retrieveInput
+
+      emailAddress=$(awk -v input="$input" 'tolower($0) ~ tolower(input) {print $1}' CustomerDetails)
+      emailCust "$emailAddress" "$subject" "$message"
+      ;;
+    3)
+      #Prompt user for search term
+      echo "Please enter your search term"
+      retrieveInput
+
+      #Create an array of row numbers where a case insensitive match is found (Both set to lowercase)
+      arr=($(awk -v input="$input" 'tolower($0) ~ tolower(input) {print NR}' CustomerDetails))
+
+      #If array contains multiple row numbers
+      if [[ ${#arr[@]} > 1 ]]
+      then
+        #Notify the user that more than one Customer matched the criteria
+        echo "More than one instance found please choose a number to email"
+
+        awk -v input="$input" 'BEGIN{FS="\t"} tolower($0) ~ tolower(input) {print NR " - " $1 " - " $2}' CustomerDetails
+
+        #Retrieve input and check the inputted row is one of the matches in the array of row numbers
+        retrieveInput
+        arrayContains arr
+        #Loop until the inArray variable from the function returns true
+        until [[ $inArray == 1 ]] ; do
+          #Alert the user they have entered an invalid row number and retrieve a correct row number
+          echo "Invalid row number please select from the list above"
+          retrieveInput
+          arrayContains arr
+        done
+	
+        #Find the email address on the newly found row
+        emailAddress=$(awk -v line="$input" 'BEGIN {FS="\t"} NR==line {print $1}' CustomerDetails)
+
+        #Call the email function with the validated input as an argument
+        emailCust "$emailAddress"
+
+      #if the array size is equal to one call the email function with the first (and only) instance in the array as an argument
+      elif [[ ${#arr[@]} == 1 ]]
+      then
+	emailAddress=${arr[0]}
+        emailCust "$emailAddress"
+  
+      #Notify the user there was no match found if the above conditions are not met, loops back to start
+      else
+      echo "No matching address found"
+        sleep 2
+      fi
+      ;;
+    4)
+      exit
+      ;;
+    *)
+      echo "Invalid option entered, please try again"
+      ;;
+    esac
+#Close the infinite while loop
+done
+

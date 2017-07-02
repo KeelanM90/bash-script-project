@@ -1,0 +1,41 @@
+#!/bin/bash
+#Author: Keelan Murphy
+#Description: Finds a customer based on a users input in comparison to any detains in the line
+
+#Clear the screen
+clear
+
+#Ask the user for a search term, insist that it is not blank
+echo "Please enter your search term"
+
+#Do an initial read of input - Note input not declared as local, allows access from throughout script
+read input
+
+#Loop until variable input contains something, if it doesn't already
+until [[ $input != "" ]] ; do
+  #Alert the user no information was entered
+  echo "Nothing entered, please try again:"
+  #Read the users latest input
+  read input
+done
+
+#Insert line to tidy the table of results
+echo "-------------------------------------------------------------------"
+
+#Perform a case insensitive grep count to find number of records matching input
+count=$(grep -i -c $input CustomerDetails)
+#Print number of records found
+echo "$count records found"
+#Insert line to tidy the table of results
+echo "-------------------------------------------------------------------"
+
+#Search CustomerDetails based on the input
+grep -i $input CustomerDetails
+
+#Insert line to tidy the table of results
+echo "-------------------------------------------------------------------"
+
+#Prompt the user to hit enter to continue
+echo "Press enter to return to menu"
+#Perform a read to allow the user to view the returned records
+read
